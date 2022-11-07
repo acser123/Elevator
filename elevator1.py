@@ -1,17 +1,23 @@
 # Python program to illustrate the concept
 # of threading
-
+import numpy as np
+import queue
 import threading
 
 import os
+import time
  
 N_iter = 10
 N_floors = 5
-elevator_btns = [0 for i in range(N_floors)]
+sleep_sec = 2
+#elevator_btns = [0 for i in range(N_floors)]
+elevator_btns = np.zeros(N_floors)
 floor_up_btns = [0 for i in range(N_floors)]
 floor_dn_btns = [0 for i in range(N_floors)]
 #print("elevator_btns[2]=", elevator_btns[2])
 target_floor = 2
+floor_queue = queue.Queue()
+
 
 def elevator_car():
    print("\nelevator_thread task assigned to thread: {}".format(threading.current_thread().name))
@@ -19,37 +25,55 @@ def elevator_car():
    i = 0
    state = "stopped"
    curr_floor = 0
-   while(i<N_iter):
+   while(1):
       i += 1
       print (f"\ni={i:d}\n")
-      print ("\nread buttons")
+      
+      print ("\nread buttons:")
+      target_floor = floor_queue.get()
+    
       print ("current state=", state)
+  
+
+      print ("target_floor=", target_floor)
+      
       if (state=="stopped"):
          print("stopped")
-         if (elevator_btns[target_floor]==1 and curr_floor!=target_floor):
+      if (target_floor>curr_floor):
+         while(curr_floor!=target_floor):
             state="moving up"
-      if (state=="moving up"):
-         curr_floor += 1
-         print("moving up, curr_floor=", curr_floor)
-         if (curr_floor==target_floor):
-            state="stopped"
-            elevator_btns[target_floor]=0
-            print("stopped on floor=", curr_floor)
-      #print("\nif stopped  then decide direction and get moving")
-      #print("\nif moving and between floors then decide stop on next floor")
-      #print("\nif stopped then write buttons")
-
+            if (state=="moving up"):
+               curr_floor += 1
+               print("moving up, curr_floor=", curr_floor)
+               time.sleep(sleep_sec)
+            if (curr_floor==target_floor):
+               state="stopped"
+               print("stopped on floor=", curr_floor)
+               time.sleep(sleep_sec)
+      if (target_floor<curr_floor):
+         while(curr_floor!=target_floor):
+            state="moving dn"
+            if (state=="moving dn"):
+               curr_floor -= 1
+               print("moving dn, curr_floor=", curr_floor)
+               time.sleep(sleep_sec)
+            if (curr_floor==target_floor):
+               state="stopped"
+               print("stopped on floor=", curr_floor)
+               time.sleep(sleep_sec)
 def elevator_buttons():
 
    print("\Elevator buttons assigned to thread: {}".format(threading.current_thread().name))
    print("ID of process running task 2: {}".format(os.getpid()))
    j = 0
-   while(j<N_iter):
+   while(1):
       j += 1      
       print(f"\nj={j:d}")
-      if (elevator_btns[target_floor]==0):
-         print("pushing elevator_button[target_floor]")
-         elevator_btns[target_floor]=1          
+      f = input("Input floor number:\n")
+      f = int(f)
+      floor_queue.put(f)      
+
+         
 
 if __name__ == "__main__":
     # print ID of current process
