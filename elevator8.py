@@ -75,20 +75,16 @@ def controller():
    
    k = 0
    while(True):
-      k += 1      
+       k += 1      
 
-      if(shared_data.wake_controller):
-        if (len(shared_data.fifo) == 1):
-            shared_data.target_floor = shared_data.fifo[0]
-
-        if (len(shared_data.fifo) > 1):
-            shared_data.target_floor = shared_data.fifo[0]
-            del shared_data.fifo[0]
+       if(shared_data.wake_controller):
+           if (len(shared_data.fifo) > 0):
+              shared_data.target_floor = shared_data.fifo[0]
+              del shared_data.fifo[0]
         
-        shared_data.wake_controller = False
-        
-                
-      time.sleep(SLEEP_SECONDS) # allow for elevator_car thread to pick up changes to shared_data.target_floor
+           shared_data.wake_controller = False
+               
+       time.sleep(SLEEP_SECONDS) # allow for elevator_car thread to pick up changes to shared_data.target_floor
          
 
 # Launch threads from main program
