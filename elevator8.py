@@ -31,6 +31,8 @@ class sharedData:
     state = "stopped"  # elevator state: "stopped", "moving up", or "moving dn"
     current_floor = 0  # current floor, position of the elevator
     wake_controller = False  # indicates if elevator_buttons pushed new floor button
+    ## Need indicator of overall direction of travel
+    direction = STATE_STOP # overall direction of travel
 
 
 shared_data = sharedData()  # instantiate object
@@ -74,6 +76,9 @@ def elevator_buttons():
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
             shared_data.fifo.add(f)
+            print(
+                f"elevator_buttons(): button pressed, shared_data.fifo={shared_data.fifo:}, shared_data.state={shared_data.state:}"
+            )   
             shared_data.wake_controller = True  # indicate the pressing of a new button
 
 
@@ -94,17 +99,17 @@ def controller():
                     saved_floor = shared_data.target_floor
                     shared_data.target_floor = shared_data.fifo[0]
                     shared_data.fifo.add(saved_floor)
+                    del shared_data.fifo[0]
                     
                 if shared_data.state == STATE_DN:
                     saved_floor = shared_data.target_floor
-                    shared_data.target_floor = shared_data.fifo[0]
+                    shared_data.target_floor = shared_data.fifo[-1]
                     shared_data.fifo.add(saved_floor)
+                    del shared_data.fifo[-1]
                     
             shared_data.wake_controller = False
 
-        time.sleep(
-            SLEEP_SECONDS
-        )  # allow for elevator_car thread to pick up changes to shared_data.target_floor
+        time.sleep(SLEEP_SECONDS)  # allow for elevator_car thread to pick up changes to shared_data.target_floor
 
 
 # Launch threads from main program
