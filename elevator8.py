@@ -92,8 +92,8 @@ def controller():
         if shared_data.wake_controller:
             if len(shared_data.fifo) > 0:
                 if shared_data.state == STATE_STOP:
-                    shared_data.target_floor = shared_data.fifo[0]
-                    del shared_data.fifo[0]
+                    shared_data.target_floor = shared_data.fifo[0] ## This is incorrect if the elevator is traveling down, need to look at the direction variable
+                    del shared_data.fifo[0] 
 
                 if shared_data.state == STATE_UP:
                     saved_floor = shared_data.target_floor
