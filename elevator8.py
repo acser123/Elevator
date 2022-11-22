@@ -56,7 +56,7 @@ def elevator_car():
 
         else:
             shared_data.wake_controller = True
-            shared_data.state = STATE_STOP
+            shared_data.state = STATE_STOP # this line is required
             print("stopped")
 
         print(
