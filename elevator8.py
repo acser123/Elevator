@@ -1,8 +1,3 @@
-
-# TODO:
-# DONE: get git, eclipse
-
-
 # Elevator simulator
 
 import numpy as np
@@ -26,7 +21,7 @@ STATE_STOP = "stopped"
 
 # Class to communicate between elevator_buttons, elevator_car, and controller
 class sharedData:
-    fifo = SortedSet()  # contains floors to stop at, next floor at the end
+    fifo_up = SortedSet()  # contains floors to stop at, next floor at the end
     target_floor = 0  # stop on this floor next
     state = STATE_UP  # elevator state: "stopped", "moving up", or "moving dn"
     current_floor = 0  # current floor, position of the elevator
@@ -61,7 +56,7 @@ def elevator_car():
             print("stopped")
 
         print(
-            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, shared_data.fifo={shared_data.fifo:}, shared_data.state={shared_data.state:}"
+            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.state={shared_data.state:}"
         )
         time.sleep(SLEEP_SECONDS)
 
@@ -76,48 +71,48 @@ def elevator_buttons():
         f = input("Input floor number:\n")
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
-            shared_data.fifo.add(f)
+            shared_data.fifo_up.add(f)
             print(
-                f"elevator_buttons(): button pressed, shared_data.fifo={shared_data.fifo:}, shared_data.state={shared_data.state:}"
+                f"elevator_buttons(): button pressed, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.state={shared_data.state:}"
             )   
             shared_data.wake_controller = True  # indicate the pressing of a new button
 
 
-# Business logic: how to assemble the shared_data.fifo which contains what floors the elevator will stop on
+# Business logic: how to assemble the shared_data.fifo_up which contains what floors the elevator will stop on
 def controller():
     saved_floor = 0
     k = 0
-    shared_data.fifo.add(BOTTOM_FLOOR)
+    shared_data.fifo_up.add(BOTTOM_FLOOR)
 
     while True:
         k += 1
 
         if shared_data.wake_controller:
-            if len(shared_data.fifo) > 0:
+            if len(shared_data.fifo_up) > 0:
                 if (shared_data.moving == False):
                     if (shared_data.state == STATE_UP):
-                        shared_data.target_floor = shared_data.fifo[0] ## This is incorrect if the elevator is traveling down, need to look at the direction variable
-                        del shared_data.fifo[0] 
+                        shared_data.target_floor = shared_data.fifo_up[0] 
+                        del shared_data.fifo_up[0] 
                     if (shared_data.state == STATE_DN):
-                        shared_data.target_floor = shared_data.fifo[-1]
-                        del shared_data.fifo[-1] 
+                        shared_data.target_floor = shared_data.fifo_up[-1]
+                        del shared_data.fifo_up[-1] 
                 if (shared_data.moving == True):
                     if shared_data.state == STATE_UP:
-                        if shared_data.current_floor < shared_data.fifo[0]:
+                        if shared_data.current_floor < shared_data.fifo_up[0]:
                             saved_floor = shared_data.target_floor
-                            shared_data.target_floor = shared_data.fifo[0]
-                            shared_data.fifo.add(saved_floor)
-                            del shared_data.fifo[0]
+                            shared_data.target_floor = shared_data.fifo_up[0]
+                            shared_data.fifo_up.add(saved_floor)
+                            del shared_data.fifo_up[0]
                         else:
                             dummy = 0
                             # Need another fifo for collecting the down floors
                     
                     if shared_data.state == STATE_DN:
-                        if shared_data.current_floor > shared_data.fifo[-1]:
+                        if shared_data.current_floor > shared_data.fifo_up[-1]:
                             saved_floor = shared_data.target_floor
-                            shared_data.target_floor = shared_data.fifo[-1]
-                            shared_data.fifo.add(saved_floor)
-                            del shared_data.fifo[-1]
+                            shared_data.target_floor = shared_data.fifo_up[-1]
+                            shared_data.fifo_up.add(saved_floor)
+                            del shared_data.fifo_up[-1]
                   
 
             shared_data.wake_controller = False
