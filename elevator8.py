@@ -28,12 +28,11 @@ STATE_STOP = "stopped"
 class sharedData:
     fifo = SortedSet()  # contains floors to stop at, next floor at the end
     target_floor = 0  # stop on this floor next
-    state = "stopped"  # elevator state: "stopped", "moving up", or "moving dn"
+    state = STATE_UP  # elevator state: "stopped", "moving up", or "moving dn"
     current_floor = 0  # current floor, position of the elevator
     wake_controller = False  # indicates if elevator_buttons pushed new floor button
     ## Need indicator of overall direction of travel
-    direction = STATE_STOP # overall direction of travel
-
+    moving = False # 
 
 shared_data = sharedData()  # instantiate object
 
@@ -47,16 +46,18 @@ def elevator_car():
         # Going up
         if shared_data.target_floor > shared_data.current_floor:
             shared_data.state = STATE_UP
+            shared_data.moving = True
             shared_data.current_floor += 1
 
         # Going down
         elif shared_data.target_floor < shared_data.current_floor:
             shared_data.state = STATE_DN
+            shared_data.moving = True
             shared_data.current_floor -= 1
 
         else:
             shared_data.wake_controller = True
-            shared_data.state = STATE_STOP # this line is required
+            shared_data.moving = False # this line is required
             print("stopped")
 
         print(
@@ -67,7 +68,7 @@ def elevator_car():
 
 # Thread to handle pressing elevator buttons
 def elevator_buttons():
-
+    
     j = 0
     while True:
         j += 1
@@ -86,27 +87,39 @@ def elevator_buttons():
 def controller():
     saved_floor = 0
     k = 0
+    shared_data.fifo.add(BOTTOM_FLOOR)
+
     while True:
         k += 1
 
         if shared_data.wake_controller:
             if len(shared_data.fifo) > 0:
-                if shared_data.state == STATE_STOP:
-                    shared_data.target_floor = shared_data.fifo[0] ## This is incorrect if the elevator is traveling down, need to look at the direction variable
-                    del shared_data.fifo[0] 
+                if (shared_data.moving == False):
+                    if (shared_data.state == STATE_UP):
+                        shared_data.target_floor = shared_data.fifo[0] ## This is incorrect if the elevator is traveling down, need to look at the direction variable
+                        del shared_data.fifo[0] 
+                    if (shared_data.state == STATE_DN):
+                        shared_data.target_floor = shared_data.fifo[-1]
+                        del shared_data.fifo[-1] 
+                if (shared_data.moving == True):
+                    if shared_data.state == STATE_UP:
+                        if shared_data.current_floor < shared_data.fifo[0]:
+                            saved_floor = shared_data.target_floor
+                            shared_data.target_floor = shared_data.fifo[0]
+                            shared_data.fifo.add(saved_floor)
+                            del shared_data.fifo[0]
+                        else:
+                            dummy = 0
+                            # Need another fifo for collecting the down floors
+                    
+                    if shared_data.state == STATE_DN:
+                        if shared_data.current_floor > shared_data.fifo[-1]:
+                            saved_floor = shared_data.target_floor
+                            shared_data.target_floor = shared_data.fifo[-1]
+                            shared_data.fifo.add(saved_floor)
+                            del shared_data.fifo[-1]
+                  
 
-                if shared_data.state == STATE_UP:
-                    saved_floor = shared_data.target_floor
-                    shared_data.target_floor = shared_data.fifo[0]
-                    shared_data.fifo.add(saved_floor)
-                    del shared_data.fifo[0]
-                    
-                if shared_data.state == STATE_DN:
-                    saved_floor = shared_data.target_floor
-                    shared_data.target_floor = shared_data.fifo[-1]
-                    shared_data.fifo.add(saved_floor)
-                    del shared_data.fifo[-1]
-                    
             shared_data.wake_controller = False
 
         time.sleep(SLEEP_SECONDS)  # allow for elevator_car thread to pick up changes to shared_data.target_floor
