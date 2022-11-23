@@ -11,9 +11,10 @@ TOP_FLOOR = 20
 BOTTOM_FLOOR = 0
 SLEEP_SECONDS = 2
 
-STATE_UP = "moving up"
-STATE_DN = "moving down"
-STATE_STOP = "stopped"
+# Direction of travel states
+UP = "moving up"
+DN = "moving down"
+
 # or create an enum class
 # class mode:
 #    action
@@ -21,18 +22,20 @@ STATE_STOP = "stopped"
 
 # Class to communicate between elevator_buttons, elevator_car, and controller
 class sharedData:
-    fifo_up = SortedSet()  # contains floors to stop at, next floor at the end
-    target_floor = 0  # stop on this floor next
-    state = STATE_UP  # elevator state: "stopped", "moving up", or "moving dn"
-    current_floor = 0  # current floor, position of the elevator
-    wake_controller = False  # indicates if elevator_buttons pushed new floor button
-    ## Need indicator of overall direction of travel
-    moving = False # 
+    fifo_up = SortedSet()   # n up direction travel, contains floors to stop at, next floor at the beginning
+    fifo_dn = SortedSet()   # n up direction travel, contains floors to stop at, next floor at the end
+    target_floor = 0        # stop on this floor next
+    travel_direction = UP   # elevator direction of travel: "moving up", or "moving dn"
+    moving = False          # Movement indicator True/False
+    current_floor = 0       # current floor, position of the elevator
+    wake_controller = False # indicates if elevator_buttons pushed new floor button
+   
+    
 
 shared_data = sharedData()  # instantiate object
 
 
-# Elevator car thread, sets elevator state, then moves elevator to shared_data.target_floor
+# Elevator car thread, sets elevator travel_direction, then moves elevator to shared_data.target_floor
 def elevator_car():
     i = 0
     while True:
@@ -40,13 +43,13 @@ def elevator_car():
 
         # Going up
         if shared_data.target_floor > shared_data.current_floor:
-            shared_data.state = STATE_UP
+            shared_data.travel_direction = UP
             shared_data.moving = True
             shared_data.current_floor += 1
 
         # Going down
         elif shared_data.target_floor < shared_data.current_floor:
-            shared_data.state = STATE_DN
+            shared_data.travel_direction = DN
             shared_data.moving = True
             shared_data.current_floor -= 1
 
@@ -56,7 +59,7 @@ def elevator_car():
             print("stopped")
 
         print(
-            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.state={shared_data.state:}"
+            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.travel_direction={shared_data.travel_direction:}"
         )
         time.sleep(SLEEP_SECONDS)
 
@@ -73,7 +76,7 @@ def elevator_buttons():
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
             shared_data.fifo_up.add(f)
             print(
-                f"elevator_buttons(): button pressed, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.state={shared_data.state:}"
+                f"elevator_buttons(): button pressed, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.travel_direction={shared_data.travel_direction:}"
             )   
             shared_data.wake_controller = True  # indicate the pressing of a new button
 
@@ -90,14 +93,14 @@ def controller():
         if shared_data.wake_controller:
             if len(shared_data.fifo_up) > 0:
                 if (shared_data.moving == False):
-                    if (shared_data.state == STATE_UP):
+                    if (shared_data.travel_direction == UP):
                         shared_data.target_floor = shared_data.fifo_up[0] 
                         del shared_data.fifo_up[0] 
-                    if (shared_data.state == STATE_DN):
+                    if (shared_data.travel_direction == DN):
                         shared_data.target_floor = shared_data.fifo_up[-1]
                         del shared_data.fifo_up[-1] 
                 if (shared_data.moving == True):
-                    if shared_data.state == STATE_UP:
+                    if shared_data.travel_direction == UP:
                         if shared_data.current_floor < shared_data.fifo_up[0]:
                             saved_floor = shared_data.target_floor
                             shared_data.target_floor = shared_data.fifo_up[0]
@@ -107,7 +110,7 @@ def controller():
                             dummy = 0
                             # Need another fifo for collecting the down floors
                     
-                    if shared_data.state == STATE_DN:
+                    if shared_data.travel_direction == DN:
                         if shared_data.current_floor > shared_data.fifo_up[-1]:
                             saved_floor = shared_data.target_floor
                             shared_data.target_floor = shared_data.fifo_up[-1]
