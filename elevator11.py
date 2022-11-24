@@ -44,7 +44,7 @@ def elevator_car():
         i += 1
 
         # Going up
-        shared_data.lock.acquire()
+        #shared_data.lock.acquire()
         if shared_data.target_floor > shared_data.current_floor:
             
             shared_data.travel_direction = UP
@@ -63,13 +63,13 @@ def elevator_car():
             
             shared_data.wake_controller = True
             shared_data.moving = False # this line is required
-            print("stopped")
+            print(f"stopped on floor {shared_data.current_floor:}")
             
 
         print(
             f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, fifo_up={shared_data.fifo_up:}, fifo_dn={shared_data.fifo_dn:}, travel_direction={shared_data.travel_direction:}"
         )
-        shared_data.lock.release()
+        #shared_data.lock.release()
         time.sleep(SLEEP_SECONDS)
 
 
@@ -83,7 +83,7 @@ def elevator_buttons():
         f = input("Input floor number:\n")
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
-            shared_data.lock.acquire()
+            #shared_data.lock.acquire()
             if shared_data.travel_direction == UP:
                 shared_data.fifo_up.add(f)
             if shared_data.travel_direction == DN:
@@ -92,7 +92,7 @@ def elevator_buttons():
                 f"elevator_buttons(): button pressed, fifo_up={shared_data.fifo_up:}, fifo_dn={shared_data.fifo_dn:}, shared_data.travel_direction={shared_data.travel_direction:}"
             )   
             shared_data.wake_controller = True  # indicate the pressing of a new button
-            shared_data.lock.release()
+            #shared_data.lock.release()
 
 # Business logic: how to assemble the shared_data.fifo_up which contains what floors the elevator will stop on
 def controller():
@@ -110,7 +110,7 @@ def controller():
 
         if shared_data.wake_controller:
             # Acquire mutex to protect controller logic
-            shared_data.lock.acquire()
+            #shared_data.lock.acquire()
             
             # Upward travel logic
             # Can't do any operation on an empty fifo
@@ -183,7 +183,7 @@ def controller():
                             shared_data.target_floor = shared_data.fifo_dn[-1]
                             del shared_data.fifo_dn[-1]
                             # Change travel direction
-                            shared_data.travel_direction = DN
+                        shared_data.travel_direction = DN
 
             # No more floors on downward travel,elevator stops and there are floors pushed above, then elevator needs
             # to start going up
@@ -194,10 +194,10 @@ def controller():
                             shared_data.target_floor = shared_data.fifo_up[0]
                             del shared_data.fifo_up[0]
                             # Change travel direction
-                            shared_data.travel_direction = UP
+                        shared_data.travel_direction = UP
 
             # Release mutex lock
-            shared_data.lock.release()
+            #shared_data.lock.release()
         # Reset interrupt flag
         shared_data.wake_controller = False
         
