@@ -182,7 +182,7 @@ def controller():
                         if len(shared_data.fifo_dn) > 0:
                             shared_data.target_floor = shared_data.fifo_dn[-1]
                             del shared_data.fifo_dn[-1]
-                            # Change travel direction
+                        # Change travel direction
                         shared_data.travel_direction = DN
 
             # No more floors on downward travel,elevator stops and there are floors pushed above, then elevator needs
@@ -193,7 +193,7 @@ def controller():
                         if len(shared_data.fifo_up) > 0:
                             shared_data.target_floor = shared_data.fifo_up[0]
                             del shared_data.fifo_up[0]
-                            # Change travel direction
+                        # Change travel direction
                         shared_data.travel_direction = UP
 
             # Release mutex lock
