@@ -84,6 +84,8 @@ def elevator_buttons():
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
             #shared_data.lock.acquire()
+            # Add new floor to the appropriate fifo up or dn
+            # If we passed that floor, we will deal with it in the controller() thread
             if shared_data.travel_direction == UP:
                 shared_data.fifo_up.add(f)
             if shared_data.travel_direction == DN:
