@@ -1,6 +1,7 @@
 # Elevator simulator
 
-from multiprocessing import shared_memory
+from multiprocessing import shared_memory, sharedctypes
+from tarfile import FIFOTYPE
 import numpy as np
 import queue
 import threading
@@ -60,7 +61,7 @@ def elevator_car():
             print("stopped")
 
         print(
-            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.travel_direction={shared_data.travel_direction:}"
+            f"current_floor={shared_data.current_floor:d}, target_floor={shared_data.target_floor:d}, fifo_up={shared_data.fifo_up:}, fifo_dn={shared_data.fifo_dn:}, travel_direction={shared_data.travel_direction:}"
         )
         time.sleep(SLEEP_SECONDS)
 
@@ -80,7 +81,7 @@ def elevator_buttons():
             if shared_data.travel_direction == DN:
                 shared_data.fifo_dn.add(f) # need to work this into the controller logic
             print(
-                f"elevator_buttons(): button pressed, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.travel_direction={shared_data.travel_direction:}"
+                f"elevator_buttons(): button pressed, fifo_up={shared_data.fifo_up:}, fifo_dn={shared_data.fifo_dn:}, shared_data.travel_direction={shared_data.travel_direction:}"
             )   
             shared_data.wake_controller = True  # indicate the pressing of a new button
 
@@ -97,6 +98,8 @@ def controller():
 
         # Either a button was pushed or the elevator reached the target floor and stopped
         if shared_data.wake_controller:
+
+            # Upward travel logic
             # Can't do any operation on an empty fifo
             if len(shared_data.fifo_up) > 0:
                 # Direction of travel is up
@@ -104,6 +107,7 @@ def controller():
                     if (shared_data.moving == False):
                         shared_data.target_floor = shared_data.fifo_up[0]
                         del shared_data.fifo_up[0]
+                       
                     if shared_data.moving == True:
                         if shared_data.current_floor < shared_data.fifo_up[0]:
                             # Elevator needs to stop on a lower floor than what was the original destination
@@ -113,10 +117,20 @@ def controller():
                             shared_data.fifo_up.add(saved_floor)
                             del shared_data.fifo_up[0]
                         else:
-                            # Save lower floor pushed than current floor for downward travel stop
+                            # Save lower floor pushed than current floor for the next downward travel stop
                             shared_data.fifo_dn.add(shared_data.fifo_up[0])
                             del shared_data.fifo_up[0]
 
+             # No more floors on upward travel and there are floors pushed below, then elevator needs
+             # to start going down
+            if len(shared_data.fifo_up) == 0 and len(shared_data.fifo_dn) > 0:
+                if shared_data.travel_direction == UP:
+                    if (shared_data.moving == False):
+                        shared_data.target_floor = shared_data.fifo_dn[-1]
+                        del shared_data.fifo_dn[-1]
+
+            # --------------------------------------
+            # Downward travel logic
             # Can't do any operation on an empty fifo
             if len(shared_data.fifo_dn) > 0:
                 # Direction of travel is up
@@ -133,13 +147,23 @@ def controller():
                             shared_data.fifo_dn.add(saved_floor)
                             del shared_data.fifo_dn[-1]
                         else:
-                            # Save lower floor pushed than current floor for downward travel stop
+                            # Save higher floor pushed than current floor for the next upward travel stop
                             shared_data.fifo_up.add(shared_data.fifo_dn[-1])
                             del shared_data.fifo_dn[-1]                  
 
+            # No more floors on downward travel and there are floors pushed above, then elevator needs
+            # to start going up
+            if len(shared_data.fifo_dn) == 0 and len(shared_data.fifo_up) > 0:
+                if shared_data.travel_direction == DN:
+                    if (shared_data.moving == False):
+                        shared_data.target_floor = shared_data.fifo_up[0]
+                        del shared_data.fifo_up[0]
+
+        # Reset interrupt flag
         shared_data.wake_controller = False
 
-        time.sleep(SLEEP_SECONDS)  # allow for elevator_car thread to pick up changes to shared_data.target_floor
+        # Ensure you can receive updates
+        time.sleep(SLEEP_SECONDS/2)  # allow for controller() thread to pick up changes faster than elevator_car() to shared_data.target_floor
 
 
 # Launch threads from main program
