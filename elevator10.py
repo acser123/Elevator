@@ -75,6 +75,7 @@ def elevator_buttons():
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
             shared_data.fifo_up.add(f)
+            shared_data.fifo_dn.add(f) # need to work this into the controller logic
             print(
                 f"elevator_buttons(): button pressed, shared_data.fifo_up={shared_data.fifo_up:}, shared_data.travel_direction={shared_data.travel_direction:}"
             )   
@@ -89,6 +90,7 @@ def controller():
 
     while True:
         k += 1
+        # TODO: refactor by UP and DN direction if's
 
         if shared_data.wake_controller:
             if len(shared_data.fifo_up) > 0:
