@@ -96,9 +96,12 @@ def elevator_buttons():
         f = input("Input floor number:\n")
         f = int(f)
         if f >= BOTTOM_FLOOR and f <= TOP_FLOOR:
+            
             shared_data.lock.acquire()
+
             # Add new floor to the appropriate fifo up or dn
             # If we passed that floor, we will deal with it in the controller() thread
+            # TODO: Move this code to controller() for better partitioning of components
             if shared_data.travel_direction == UP:
                 shared_data.fifo_up.add(f)
             if shared_data.travel_direction == DN:
@@ -136,13 +139,13 @@ def controller():
             # Acquire mutex to protect controller logic
             shared_data.lock.acquire()
             
-            # No direct travel logic
+            # No direction (elevator stopped without any buttons pushed) travel logic
             if shared_data.travel_direction == NO_DIRECTION and shared_data.moving == False:
                 if len(shared_data.fifo_up) > 0:
                     print("controller: NO_DIRECTION -> UP")
                     shared_data.travel_direction = UP
                 if len(shared_data.fifo_dn) > 0:
-                   
+                    print("controller: NO_DIRECTION -> DN")
                     shared_data.travel_direction = DN
 
 
@@ -150,6 +153,7 @@ def controller():
             # Direction of travel is up
             if shared_data.travel_direction == UP:
                 
+                # Elevator stopped and there is no more floors pushed on fifo_up
                 if len(shared_data.fifo_up) == 0 and shared_data.current_floor == shared_data.target_floor:
                     print("controller: UP -> NO_DIRECTION")
                     shared_data.travel_direction == NO_DIRECTION
@@ -157,29 +161,28 @@ def controller():
                 # Can't do any operation on an empty fifo
                 if len(shared_data.fifo_up) > 0:
                 
+                    # Elevator is not moving
                     if (shared_data.moving == False):
-               
+                        
+                        # Pop the lowest element of the fifo_up and set it as the target_floor
                         # Only allow for setting the target floor when it is higher than the current target floor
                         if shared_data.fifo_up[0] > shared_data.current_floor:
                             shared_data.target_floor = shared_data.fifo_up[0]
                             # del shared_data.fifo_up[0]
                             print(f"controller: UP, moving=False, set target_floor={shared_data.target_floor:}")
-
+                        """
                         # We arrived on the called highest floor and we need to change direction, going down
                         if len(shared_data.fifo_up) > 0 and shared_data.fifo_up[0] < shared_data.target_floor and shared_data.current_floor == shared_data.target_floor:
                             shared_data.target_floor = shared_data.fifo_up[0] 
                             #del shared_data.fifo_up[0]
                             shared_data.travel_direction = DN
                             print(f"controller: UP to DN, moving=False, set target_floor={shared_data.target_floor:}")
-                      
+                        """                   
 
                     if shared_data.moving == True:
                         if shared_data.current_floor < shared_data.fifo_up[0]:
                             # Elevator needs to stop on a lower floor than what was the original destination
                             # We need to insert a new target floor and save the old target floor on the fifo
-                            
-
-
                             if shared_data.fifo_up[0] < shared_data.target_floor:
                                 saved_floor = shared_data.target_floor
                                 shared_data.target_floor = shared_data.fifo_up[0]
@@ -218,13 +221,15 @@ def controller():
                             # del shared_data.fifo_dn[-1]
                             print(f"controller: DN, moving=False, set target_floor={shared_data.target_floor:}")
                         
+                        """
                         # We arrived on the called lowest floor and we need to change direction, going up
                         if len(shared_data.fifo_dn) > 0 and shared_data.fifo_dn[-1] > shared_data.target_floor and shared_data.current_floor == shared_data.target_floor:
                             shared_data.target_floor = shared_data.fifo_dn[-1]
                             # del shared_data.fifo_dn[0]
                             shared_data.travel_direction = UP
                             print(f"controller: DN to UP, moving=False, set target_floor={shared_data.target_floor:}")
-                            
+                        """
+                        
                     if shared_data.moving == True:
                         if shared_data.current_floor > shared_data.fifo_dn[-1]:
                             # Elevator needs to stop on a higher floor than what was the original destination
