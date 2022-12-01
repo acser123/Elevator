@@ -108,9 +108,11 @@ def elevator_buttons():
             # Add new floor to the appropriate fifo up or dn
             # If we passed that floor, we will deal with it in the controller() thread
             # TODO: Move this code to controller() for better partitioning of components
-            if shared_data.travel_direction == UP:
-                shared_data.fifo_up.add(f)
-            if shared_data.travel_direction == DN:
+
+            # Do not allow the current floor where we are to be pressed on the buttons
+            if shared_data.travel_direction == UP and f != shared_data.current_floor:
+                shared_data.fifo_up.add(f) 
+            if shared_data.travel_direction == DN and f != shared_data.current_floor:
                 shared_data.fifo_dn.add(f) 
             if shared_data.travel_direction == NO_DIRECTION:
                 if shared_data.current_floor < f:
@@ -178,8 +180,14 @@ def controller():
                         if shared_data.fifo_up[0] > shared_data.current_floor:
                             shared_data.target_floor = shared_data.fifo_up[0]
                             print(f"controller: UP, moving=False, set target_floor={shared_data.target_floor:}")
+                        """
                         else:
-                            shared_data.fifo_up.remove(shared_data.current_floor)
+                            try:
+                                shared_data.fifo_up.remove(shared_data.current_floor)
+                            finally:
+                                print("ignore")
+                                return
+                        """
                  
                     # Elevator is moving
                     if shared_data.moving == True:
