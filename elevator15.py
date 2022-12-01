@@ -191,16 +191,16 @@ def controller():
                                 shared_data.target_floor = shared_data.fifo_up[0]
                                 shared_data.fifo_up.add(saved_floor)
                                 print(f"controller: UP, inserting new floor, moving={shared_data.moving:0}, curr_floor<fifo_up[0], fifo_up[0]<target_floor, set target_floor={shared_data.target_floor:}")
-                        else:
-                            # Need to move all floors from the beginning of the fifo_up to fifo_dn that are smaller than the current floor
+                        #else:
+                   # Need to move all floors from the beginning of the fifo_up to fifo_dn that are smaller than the current floor
 
-                            for val in shared_data.fifo_up:
+                    for val in shared_data.fifo_up:
                                
-                                if val < shared_data.current_floor:
-                                    shared_data.fifo_dn.add(val)
-                                    shared_data.fifo_up.remove(val)
-                                    print(f"controller: UP, removed val={val:}")
-                                    print(f"controller: UP, moving=True, cleanup, moved val={val:} from fifo_up to fifo_dn")
+                        if val < shared_data.current_floor:
+                            shared_data.fifo_dn.add(val)
+                            shared_data.fifo_up.remove(val)
+                            print(f"controller: UP, removed val={val:}")
+                            print(f"controller: UP, moving=True, cleanup, moved val={val:} from fifo_up to fifo_dn")
                          
                         
                        
@@ -239,8 +239,8 @@ def controller():
                                 shared_data.target_floor = shared_data.fifo_dn[-1]
                                 shared_data.fifo_dn.add(saved_floor)
                                 print(f"controller: DN, inserting new floor, moving={shared_data.moving:0}, curr_floor>fifo_dn[-1], fifo_dn[-1]>target_floor, set target_floor={shared_data.target_floor:}")
-                        #else:
-                            # Need to move all floors from the end of the fifo_dn to fifo_up that are larger than the current floor
+                    
+                    # Need to move all floors from the end of the fifo_dn to fifo_up that are larger than the current floor
 
                     for val in shared_data.fifo_dn:
                                
