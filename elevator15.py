@@ -192,8 +192,7 @@ def controller():
                                 shared_data.fifo_up.add(saved_floor)
                                 print(f"controller: UP, inserting new floor, moving={shared_data.moving:0}, curr_floor<fifo_up[0], fifo_up[0]<target_floor, set target_floor={shared_data.target_floor:}")
                         #else:
-                   # Need to move all floors from the beginning of the fifo_up to fifo_dn that are smaller than the current floor
-
+                    # Need to move all floors from the beginning of the fifo_up to fifo_dn that are smaller than the current floor
                     for val in shared_data.fifo_up:
                                
                         if val < shared_data.current_floor:
