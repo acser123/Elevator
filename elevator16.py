@@ -178,6 +178,8 @@ def controller():
                         if shared_data.fifo_up[0] > shared_data.current_floor:
                             shared_data.target_floor = shared_data.fifo_up[0]
                             print(f"controller: UP, moving=False, set target_floor={shared_data.target_floor:}")
+                        else:
+                            shared_data.fifo_up.remove(shared_data.current_floor)
                  
                     # Elevator is moving
                     if shared_data.moving == True:
@@ -225,7 +227,8 @@ def controller():
                         if shared_data.fifo_dn[-1] < shared_data.current_floor:
                             shared_data.target_floor = shared_data.fifo_dn[-1]
                             print(f"controller: DN, moving=False, set target_floor={shared_data.target_floor:}")
-                 
+                        else:
+                            shared_data.fifo_dn.remove(shared_data.current_floor)
                     # Elevator is moving
                     if shared_data.moving == True:
 
